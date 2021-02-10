@@ -267,17 +267,17 @@ class Signals:
         price = self.df['close'].array[-3:]
         signals = []
         if ema_200[2] > price[2] and ema_200[1] < price[1] and ema_200[0] < price[0]:
-            self.ema_signals_dict['Price crossing down EMA200'] = True
-        elif ema_200[2] < price[2] and ema_200[1] > price[1] and ema_200[0] > price[0]:
             self.ema_signals_dict['Price crossing up EMA200'] = True
+        elif ema_200[2] < price[2] and ema_200[1] > price[1] and ema_200[0] > price[0]:
+            self.ema_signals_dict['Price crossing down EMA200'] = True
         if ema_20[2] > ema_50[2] and ema_20[1] < ema_50[1] and ema_20[0] < ema_50[0]:
-            self.ema_signals_dict['EMA20 crossing up EMA50'] = True
-        elif ema_20[2] < ema_50[2] and ema_20[1] > ema_50[1] and ema_20[0] > ema_50[0]:
             self.ema_signals_dict['EMA20 crossing down EMA50'] = True
+        elif ema_20[2] < ema_50[2] and ema_20[1] > ema_50[1] and ema_20[0] > ema_50[0]:
+            self.ema_signals_dict['EMA20 crossing up EMA50'] = True
         if ema_50[2] > ema_200[2] and ema_50[1] < ema_200[1] and ema_50[0] < ema_200[0]:
-            self.ema_signals_dict['EMA50 crossing up EMA200'] = True
-        elif ema_50[2] < ema_200[2] and ema_50[1] > ema_200[1] and ema_50[0] > ema_200[0]:
             self.ema_signals_dict['EMA50 crossing down EMA200'] = True
+        elif ema_50[2] < ema_200[2] and ema_50[1] > ema_200[1] and ema_50[0] > ema_200[0]:
+            self.ema_signals_dict['EMA50 crossing up EMA200'] = True
         return self.ema_signals_dict
 
     def vol_rise_fall(self):

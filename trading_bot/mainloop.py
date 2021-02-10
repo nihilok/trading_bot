@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.DEBUG, filename='log.log')
 
 from tg_bot import BaseBot
 
+
 class MainLoop:
 
     bot = BaseBot('1698743512:AAFnBVoOOx0DmWF6isruGxMviceRaCHBsmc', channel='-1001390028426')
@@ -18,9 +19,9 @@ class MainLoop:
     def __init__(self, coins):
         check_dict = {}
         self.coins = coins
+        self.check_dict = {}
 
     def set_up(self):
-        self.check_dict = {}
         for coin in self.coins:
             self.check_dict[coin] = []
 
@@ -56,6 +57,16 @@ class MainLoop:
                     if alert[1] not in [t[1] for t in self.check_dict[coin]]:
                         self.bot.broadcast(f'[{alert[0]}] {coin}: {alert[1]}')
                         self.check_dict[coin].append(alert)
+            if signals.vol_signal:
+                alert = (check_time.strftime("%H:%M:%S"), 'Volume rising')
+                if alert[1] not in [t[1] for t in self.check_dict[coin]]:
+                    self.bot.broadcast(f'[{alert[0]}] {coin}: {alert[1]}')
+                    self.check_dict[coin].append(alert)
+            if signals.vol_candle:
+                alert = (check_time.strftime("%H:%M:%S"), 'Current candle large volume')
+                if alert[1] not in [t[1] for t in self.check_dict[coin]]:
+                    self.bot.broadcast(f'[{alert[0]}] {coin}: {alert[1]}')
+                    self.check_dict[coin].append(alert)
             for alert in self.check_dict[coin]:
                 full_time = datetime.strptime(datetime.now().strftime('%Y-%m-%d ') + alert[0],
                                               '%Y-%m-%d %H:%M:%S')
