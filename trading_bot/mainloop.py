@@ -10,20 +10,28 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, filename='log.log')
 
 from tg_bot import BaseBot
-
+from utils import get_popular_coins, open_positions
 
 class MainLoop:
 
-    bot = BaseBot('1698743512:AAFnBVoOOx0DmWF6isruGxMviceRaCHBsmc', channel='-1001390028426')
+    bot = BaseBot('1698743512:AAFnBVoOOx0DmWF6isruGxMviceRaCHBsmc',
+                  channel='-1001390028426')
 
-    def __init__(self, coins):
+    def __init__(self):
         check_dict = {}
-        self.coins = coins
+        self.coins = self.get_popular_coins()
         self.check_dict = {}
+        self.set_up()
+
+    def get_popular_coins(self):
+        self.coins = get_popular_coins()
+        return self.coins
 
     def set_up(self):
         for coin in self.coins:
-            self.check_dict[coin] = []
+            if coin not in self.check_dict.keys():
+                self.check_dict[coin] = []
+        return self.check_dict
 
     def mainloop(self):
         for coin in self.coins:
@@ -75,24 +83,27 @@ class MainLoop:
             for alert in self.check_dict[coin]:
                 full_time = datetime.strptime(datetime.now().strftime('%Y-%m-%d ') + alert[0],
                                               '%Y-%m-%d %H:%M:%S')
-                if full_time < datetime.now() - timedelta(minutes=15):
+                if full_time < datetime.now() - timedelta(minutes=15, seconds=30):
                     self.check_dict[coin].remove(alert)
 
     def print_checklist(self):
         print(self.check_dict)
 
+    def open_positions(self):
+        op = open_positions()
+        if op:
+            self.bot.broadcast('Open positions:')
+            for p in op:
+                self.bot.broadcast(p)
+
 
 if __name__ == '__main__':
-
-    coins = ["DOGEUSDT","XRPUSDT","XLMUSDT","BNBUSDT",
-             "BCHUSDT","AAVEUSDT","UNIUSDT","EGLDUSDT",
-             "SXPUSDT","MKRUSDT","SUSHIUSDT","EOSUSDT",
-             "DOTUSDT","ADAUSDT","BTCUSDT","ETHUSDT",
-             "LTCUSDT","LINKUSDT","XTZUSDT","MATICUSDT"]
-    loop = MainLoop(coins)
-    loop.set_up()
+    loop = MainLoop()
+    loop.open_positions()
     loop.mainloop()
     scheduler.start()
-    scheduler.add_job(loop.mainloop, trigger="interval", minutes=5)
+    scheduler.add_job(loop.mainloop, trigger="cron", minute='*/2')
+    scheduler.add_job(loop.get_popular_coins, trigger="cron", hour='*/1')
+    scheduler.add_job(loop.open_positions, trigger="interval", minutes='*/3')
     while True:
-        time.sleep(300)
+        time.sleep(1)

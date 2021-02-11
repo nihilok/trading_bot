@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-import matplotlib
+# import matplotlib
 # matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
@@ -267,7 +267,8 @@ class Signals:
         return self.ema_signals_dict
 
     def vol_rise_fall(self):
-        self.vol_signal = True if self.df.volume.tail(5).values.mean() >= self.df.volume.tail(13).values.mean() else False
+        recent_vol = self.df.volume.tail(3).array
+        self.vol_signal = True if recent_vol[0] < recent_vol[1] < recent_vol[2] else False
         return self.vol_signal
 
     def large_vol_candle(self):
