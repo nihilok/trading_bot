@@ -1,6 +1,7 @@
+import os
 from datetime import datetime
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 import mplfinance as mpf
@@ -9,18 +10,16 @@ import pandas_ta as ta
 import numpy as np
 import scipy.signal
 from binance.client import Client
-from binance.exceptions import BinanceAPIException
 
 plt.style.use('dark_background')
 
-client = Client('LFk4ns6REPai0HAH4RkFAj87NVq8w48EPhe5FoFxwhpBmIGmbLMSKH75D1K9SsNx',
-                '52i7Zg0orH6l2wYIgi73I5lT5p3LtAtPxNDxWwen1SBBIpxKXSHbIZ4Mr0AvDza5')
+client = Client(os.getenv('bbot_pub'), os.getenv('bbot_sec'))
 
 
 class Signals:
 
-    def __init__(self, symbol='BTCUSDT', tf='15m', futures=False):
-        self.df = self.get_df(symbol, tf, futures)
+    def __init__(self, symbol='BTCUSDT', tf='1h'):
+        self.df = self.get_df(symbol, tf)
         self.symbol = symbol.upper()
         self.tf = tf
         self.rsi_div_chart = None
@@ -44,12 +43,9 @@ class Signals:
         }
         self.macd_signals()
         self.ema_signals_dict = {
-            'Price crossing up EMA200': False,
-            'Price crossing down EMA200': False,
-            'EMA20 crossing up EMA50': False,
-            'EMA20 crossing down EMA50': False,
-            'EMA50 crossing up EMA200': False,
-            'EMA50 crossing down EMA200': False,
+            'Price crossing EMA200': None,
+            'EMA20 crossing EMA50': None,
+            'EMA50 crossing EMA200': None,
         }
         self.ema_signals()
 
@@ -62,7 +58,7 @@ class Signals:
         self.large_vol_candle()
 
     @staticmethod
-    def get_df(symbol='BTCUSDT', tf='15m', futures=False) -> pd.DataFrame:
+    def get_df(symbol='BTCUSDT', tf='1h') -> pd.DataFrame:
         interval_dict = {
             '1m': Client.KLINE_INTERVAL_1MINUTE,
             '5m': Client.KLINE_INTERVAL_5MINUTE,
@@ -73,17 +69,7 @@ class Signals:
             '1w': Client.KLINE_INTERVAL_1WEEK,
             '1M': Client.KLINE_INTERVAL_1MONTH,
         }
-        date_range_dict = {
-            '1m': '288 minutes ago',
-            '5m': '1 day ago',
-            '15m': '3 days ago',
-            '1h': '12 days ago',
-            '4h': '48 days ago',
-            '1d': '288 days ago',
-            '1w': '1 Jan 2017',
-            '1M': '1 Jan, 2017',
-        }
-        klines = client.get_historical_klines(symbol, interval_dict[tf], date_range_dict[tf])
+        klines = client.futures_klines(symbol=symbol, interval=interval_dict[tf])
         rows_list = []
         for kline in klines:
             row_dict = {
@@ -194,6 +180,7 @@ class Signals:
             ax2.plot(indices, new_rsi_array, color="#ff0066")
         fig.savefig('rsi_div.png')
         plt.close()
+        # plt.show()
 
     def rsi_divergence(self):
         rsi_array = np.array(self.df['rsi'].tail(20).array)
@@ -265,19 +252,18 @@ class Signals:
         ema_50 = self.df['ema_50'].array[-3:]
         ema_20 = self.df['ema_20'].array[-3:]
         price = self.df['close'].array[-3:]
-        signals = []
-        if ema_200[2] > price[2] and ema_200[1] < price[1] and ema_200[0] < price[0]:
-            self.ema_signals_dict['Price crossing up EMA200'] = True
-        elif ema_200[2] < price[2] and ema_200[1] > price[1] and ema_200[0] > price[0]:
-            self.ema_signals_dict['Price crossing down EMA200'] = True
-        if ema_20[2] > ema_50[2] and ema_20[1] < ema_50[1] and ema_20[0] < ema_50[0]:
-            self.ema_signals_dict['EMA20 crossing down EMA50'] = True
-        elif ema_20[2] < ema_50[2] and ema_20[1] > ema_50[1] and ema_20[0] > ema_50[0]:
-            self.ema_signals_dict['EMA20 crossing up EMA50'] = True
-        if ema_50[2] > ema_200[2] and ema_50[1] < ema_200[1] and ema_50[0] < ema_200[0]:
-            self.ema_signals_dict['EMA50 crossing down EMA200'] = True
-        elif ema_50[2] < ema_200[2] and ema_50[1] > ema_200[1] and ema_50[0] > ema_200[0]:
-            self.ema_signals_dict['EMA50 crossing up EMA200'] = True
+        if ema_200[0] > price[0] and ema_200[1] >= price[1] and ema_200[2] < price[2]:
+            self.ema_signals_dict['Price crossing EMA200'] = True
+        elif ema_200[0] < price[0] and ema_200[1] <= price[1] and ema_200[2] > price[2]:
+            self.ema_signals_dict['Price crossing EMA200'] = False
+        if ema_20[0] > ema_50[0] and ema_20[1] >= ema_50[1] and ema_20[2] < ema_50[2]:
+            self.ema_signals_dict['EMA20 crossing EMA50'] = False
+        elif ema_20[0] < ema_50[0] and ema_20[1] <= ema_50[1] and ema_20[2] > ema_50[2]:
+            self.ema_signals_dict['EMA20 crossing EMA50'] = True
+        if ema_50[0] > ema_200[0] and ema_50[1] >= ema_200[1] and ema_50[2] < ema_200[2]:
+            self.ema_signals_dict['EMA50 crossing EMA200'] = False
+        elif ema_50[0] < ema_200[0] and ema_50[1] <= ema_200[1] and ema_50[2] > ema_200[2]:
+            self.ema_signals_dict['EMA50 crossing EMA200'] = True
         return self.ema_signals_dict
 
     def vol_rise_fall(self):
@@ -294,6 +280,6 @@ class Signals:
         self.plot_emas()
 
 if __name__ == '__main__':
-    sig = Signals()
-    print(sig.df)
+    sig = Signals('ADAUSDT')
+    print(len(sig.df))
     sig.plot_charts()

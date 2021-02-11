@@ -31,9 +31,14 @@ class MainLoop:
             signals = Signals(coin)
             for k, v in signals.ema_signals_dict.items():
                 if v is True:
-                    alert = (check_time.strftime("%H:%M:%S"),k)
+                    alert = (check_time.strftime("%H:%M:%S"), k, 'bullish')
                     if k not in [t[1] for t in self.check_dict[coin]]:
-                        self.bot.broadcast(f'[{alert[0]}] {coin}: {alert[1]}')
+                        self.bot.broadcast(f'[{alert[0]}] {coin}: {alert[1]} ({alert[2]})')
+                        self.check_dict[coin].append(alert)
+                elif v is False:
+                    alert = (check_time.strftime("%H:%M:%S"), k, 'bearish')
+                    if k not in [t[1] for t in self.check_dict[coin]]:
+                        self.bot.broadcast(f'[{alert[0]}] {coin}: {alert[1]} ({alert[2]})')
                         self.check_dict[coin].append(alert)
             for k, v in signals.rsi_div_dict.items():
                 if v is True:
@@ -88,6 +93,6 @@ if __name__ == '__main__':
     loop.set_up()
     loop.mainloop()
     scheduler.start()
-    scheduler.add_job(loop.mainloop, trigger="interval", minutes=1)
+    scheduler.add_job(loop.mainloop, trigger="interval", minutes=5)
     while True:
-        time.sleep(10)
+        time.sleep(300)
