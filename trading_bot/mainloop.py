@@ -83,7 +83,7 @@ class MainLoop:
             for alert in self.check_dict[coin]:
                 full_time = datetime.strptime(datetime.now().strftime('%Y-%m-%d ') + alert[0],
                                               '%Y-%m-%d %H:%M:%S')
-                if full_time < datetime.now() - timedelta(minutes=15, seconds=30):
+                if full_time < datetime.now() - timedelta(minutes=15):
                     self.check_dict[coin].remove(alert)
 
     def print_checklist(self):
@@ -104,6 +104,6 @@ if __name__ == '__main__':
     scheduler.start()
     scheduler.add_job(loop.mainloop, trigger="cron", minute='*/2')
     scheduler.add_job(loop.get_popular_coins, trigger="cron", hour='*/1')
-    scheduler.add_job(loop.open_positions, trigger="interval", minutes='*/3')
+    scheduler.add_job(loop.open_positions, trigger="interval", minutes=3)
     while True:
         time.sleep(1)
